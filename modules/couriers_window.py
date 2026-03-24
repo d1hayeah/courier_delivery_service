@@ -32,7 +32,7 @@ class CouriersApp(QWidget):
         main_layout.addLayout(form_layout)
         
         btn_layout = QHBoxLayout()
-        self.add_btn = QPushButton("Добавить")
+        self.add_btn = QPushButton("Дoбавить")
         self.add_btn.clicked.connect(self.add_courier)
         btn_layout.addWidget(self.add_btn)
         self.update_btn = QPushButton("Изменить")

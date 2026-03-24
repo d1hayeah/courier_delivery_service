@@ -82,7 +82,7 @@ class UsersWindow(QWidget):
         login = self.login_input.text().strip()
         role = self.role_combo.currentText()
         if not login:
-            QMessageBox.warning(self, "Ошибка", "Введите логин!")
+            QMessageBox.warning(self, "Ошибкa", "Введите логин!")
             return
         hashed = hashlib.sha256("1234".encode()).hexdigest()
         conn = get_connection()

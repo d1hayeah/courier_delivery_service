@@ -136,7 +136,7 @@ class TrackingWindow(QWidget):
         self.fill_table(cursor.fetchall())
         cursor.close()
         conn.close()
-        QMessageBox.information(self, "Отчёт", "Данные отфильтрованы")
+        QMessageBox.information(self, "Отчёт", "Дaнные отфильтрованы")
 
     def search_order(self):
         track = self.search_input.text().strip()
