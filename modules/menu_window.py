@@ -1,9 +1,9 @@
 import sys
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel
-from couriers_window import CouriersApp
-from orders_window import OrdersWindow
-from tracking_window import TrackingWindow
-from users_window import UsersWindow
+from .couriers_window import CouriersApp
+from .orders_window import OrdersWindow
+from .tracking_window import TrackingWindow
+from .users_window import UsersWindow
 from auth.change_password_window import ChangePasswordWindow
 
 class MenuWindow(QWidget):

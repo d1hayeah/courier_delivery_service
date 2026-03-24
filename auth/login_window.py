@@ -63,7 +63,7 @@ class LoginWindow(QWidget):
             QMessageBox.warning(self, "Ошибка", "Неверный логин или пароль")
 
 if __name__ == "__main__":
-    from get_connection import ensure_tables
+    from database.get_connection import ensure_tables
     ensure_tables()
     app = QApplication(sys.argv)
     window = LoginWindow()
