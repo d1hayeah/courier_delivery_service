@@ -95,6 +95,9 @@ class OrdersWindow(QWidget):
         self.delete_btn = QPushButton("Удалить")
         self.delete_btn.clicked.connect(self.delete_order)
         btn_layout.addWidget(self.delete_btn)
+        self.clear_btn = QPushButton("Очистить форму")
+        self.clear_btn.clicked.connect(self.clear_form)
+        btn_layout.addWidget(self.clear_btn)
         self.export_btn = QPushButton("Отчёт")
         self.export_btn.clicked.connect(lambda: save_table(self.table, parent=self))
         btn_layout.addWidget(self.export_btn)
@@ -128,6 +131,22 @@ class OrdersWindow(QWidget):
         cost = weight * 150 + value * 0.02
         self.cost_input.setText(f"{cost:.2f}")
 
+    def clear_form(self):
+        self.sender_name.clear()
+        self.sender_addr.clear()
+        self.sender_phone.clear()
+        self.receiver_name.clear()
+        self.receiver_addr.clear()
+        self.receiver_phone.clear()
+        self.weight_input.setValue(0.1)
+        self.dim_input.clear()
+        self.value_input.setValue(0)
+        self.cost_input.clear()
+        self.status_combo.setCurrentIndex(0)
+        self.courier_combo.setCurrentIndex(0)
+        self.selected_id = None
+        QMessageBox.information(self, "Успех", "Форма очищена")
+
     def load_data(self):
         conn = get_connection()
         if not conn: return
@@ -144,7 +163,40 @@ class OrdersWindow(QWidget):
 
     def select_row(self, row, column):
         self.selected_id = self.table.item(row, 0).text()
-        QMessageBox.information(self, "Инфо", f"Выбран заказ ID: {self.selected_id}")
+        
+        conn = get_connection()
+        if not conn: return
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT sender_name, sender_address, sender_phone, receiver_name, receiver_address, 
+                   receiver_phone, weight, dimensions, declared_value, cost, status, courier_id 
+            FROM orders WHERE id = %s
+        """, (self.selected_id,))
+        
+        order = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if order:
+            self.sender_name.setText(order[0] or "")
+            self.sender_addr.setText(order[1] or "")
+            self.sender_phone.setText(order[2] or "")
+            self.receiver_name.setText(order[3] or "")
+            self.receiver_addr.setText(order[4] or "")
+            self.receiver_phone.setText(order[5] or "")
+            self.weight_input.setValue(float(order[6]) if order[6] else 0.1)
+            self.dim_input.setText(order[7] or "")
+            self.value_input.setValue(float(order[8]) if order[8] else 0)
+            self.cost_input.setText(str(order[9]) if order[9] else "")
+            
+            status_idx = self.status_combo.findText(order[10] or "")
+            if status_idx >= 0: 
+                self.status_combo.setCurrentIndex(status_idx)
+            
+            courier_idx = self.courier_combo.findData(order[11])
+            if courier_idx >= 0:
+                self.courier_combo.setCurrentIndex(courier_idx)
 
     def add_order(self):
         if self.user_role != "admin": return

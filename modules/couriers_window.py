@@ -41,6 +41,9 @@ class CouriersApp(QWidget):
         self.delete_btn = QPushButton("Удалить")
         self.delete_btn.clicked.connect(self.delete_courier)
         btn_layout.addWidget(self.delete_btn)
+        self.clear_btn = QPushButton("Очистить форму")
+        self.clear_btn.clicked.connect(self.clear_form)
+        btn_layout.addWidget(self.clear_btn)
         self.export_btn = QPushButton("Отчёт")
         self.export_btn.clicked.connect(lambda: save_table(self.table, parent=self))
         btn_layout.addWidget(self.export_btn)
@@ -77,6 +80,13 @@ class CouriersApp(QWidget):
         status = self.table.item(row, 3).text()
         idx = self.status_combo.findText(status)
         if idx >= 0: self.status_combo.setCurrentIndex(idx)
+
+    def clear_form(self):
+        self.name_input.clear()
+        self.phone_input.clear()
+        self.status_combo.setCurrentIndex(0)
+        self.selected_id = None
+        QMessageBox.information(self, "Успех", "Форма очищена")
 
     def add_courier(self):
         if self.user_role != "admin": return

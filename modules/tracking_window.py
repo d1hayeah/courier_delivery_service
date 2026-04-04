@@ -1,5 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem, QMessageBox, QDateEdit, QComboBox, QDialog, QTextEdit
+from PyQt5.QtCore import QDate
 from database.get_connection import get_connection
 from utils.report import save_table
 
@@ -50,8 +51,12 @@ class TrackingWindow(QWidget):
         
         filter_layout = QHBoxLayout()
         self.filter_status = QComboBox()
-        self.filter_status.addItem("Все", "")
-        self.filter_status.addItems(["Принят", "Передан курьеру", "В пути", "Доставлен", "Отменен"])
+        self.filter_status.addItem("Все", None)
+        self.filter_status.addItem("Принят", "Принят")
+        self.filter_status.addItem("Передан курьеру", "Передан курьеру")
+        self.filter_status.addItem("В пути", "В пути")
+        self.filter_status.addItem("Доставлен", "Доставлен")
+        self.filter_status.addItem("Отменен", "Отменен")
         filter_layout.addWidget(QLabel("Статус:"))
         filter_layout.addWidget(self.filter_status)
         
@@ -62,19 +67,19 @@ class TrackingWindow(QWidget):
         
         self.date_from = QDateEdit()
         self.date_from.setCalendarPopup(True)
+        self.date_from.setDate(QDate.currentDate().addDays(-7))  # По умолчанию неделя назад
         filter_layout.addWidget(QLabel("Дата с:"))
         filter_layout.addWidget(self.date_from)
         
-        self.filter_btn = QPushButton("Фильтр")
-        self.filter_btn.clicked.connect(self.load_filtered_data)
+        self.filter_btn = QPushButton("Применить фильтры")
+        self.filter_btn.clicked.connect(self.apply_filters)
         filter_layout.addWidget(self.filter_btn)
-        main_layout.addLayout(filter_layout)
         
-        btn_layout = QHBoxLayout()
-        self.export_btn = QPushButton("Сохранить отчёт")
-        self.export_btn.clicked.connect(lambda: save_table(self.table, parent=self))
-        btn_layout.addWidget(self.export_btn)
-        main_layout.addLayout(btn_layout)
+        self.reset_btn = QPushButton("Сбросить фильтры")
+        self.reset_btn.clicked.connect(self.reset_filters)
+        filter_layout.addWidget(self.reset_btn)
+        
+        main_layout.addLayout(filter_layout)
         
         self.setLayout(main_layout)
         self.load_couriers_to_filter()
@@ -109,34 +114,50 @@ class TrackingWindow(QWidget):
             for c_idx, val in enumerate(row):
                 self.table.setItem(r_idx, c_idx, QTableWidgetItem(str(val)))
 
-    def load_filtered_data(self):
+    def apply_filters(self):
+        status_filter = self.filter_status.currentData()
+        courier_id = self.filter_courier.currentData()
+        date_from = self.date_from.date().toString("yyyy-MM-dd")
+        
         conn = get_connection()
         if not conn: return
         cursor = conn.cursor()
-        status = self.filter_status.currentData()
-        courier_id = self.filter_courier.currentData()
-        date_from = self.date_from.date().toString("YYYY-MM-DD")
         
         query = """
             SELECT o.id, o.tracking_number, o.status, c.fullname, o.created_at, o.cost 
-            FROM orders o LEFT JOIN couriers c ON o.courier_id = c.id WHERE 1=1
+            FROM orders o LEFT JOIN couriers c ON o.courier_id = c.id 
+            WHERE 1=1
         """
         params = []
-        if status:
+        
+        if status_filter:
             query += " AND o.status = %s"
-            params.append(status)
+            params.append(status_filter)
+        
         if courier_id:
             query += " AND o.courier_id = %s"
             params.append(courier_id)
-        if date_from:
-            query += " AND o.created_at >= %s"
+        
+        # Фильтр по дате - только если выбрана дата не равная минимальной
+        if date_from and date_from != "2000-01-01":  # Минимальная дата Qt
+            query += " AND DATE(o.created_at) >= %s"
             params.append(date_from)
+        
+        query += " ORDER BY o.id DESC"
         
         cursor.execute(query, params)
         self.fill_table(cursor.fetchall())
         cursor.close()
         conn.close()
-        QMessageBox.information(self, "Отчёт", "Дaнные отфильтрованы")
+        
+        QMessageBox.information(self, "Фильтры применены", f"Найдено записей: {self.table.rowCount()}")
+
+    def reset_filters(self):
+        self.filter_status.setCurrentIndex(0)
+        self.filter_courier.setCurrentIndex(0)
+        self.date_from.setDate(QDate.currentDate().addDays(-7))
+        self.load_data()
+        QMessageBox.information(self, "Фильтры сброшены", "Показаны все записи")
 
     def search_order(self):
         track = self.search_input.text().strip()
@@ -145,15 +166,15 @@ class TrackingWindow(QWidget):
         if not conn: return
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT o.id, o.tracking_number, o.status, o.created_at, c.fullname 
+            SELECT o.id, o.tracking_number, o.status, c.fullname, o.created_at, o.cost 
             FROM orders o LEFT JOIN couriers c ON o.courier_id = c.id WHERE o.tracking_number = %s
         """, (track,))
         row = cursor.fetchone()
         cursor.close()
         conn.close()
         
-        self.table.setRowCount(0)
         if row:
+            self.table.setRowCount(0)
             self.table.insertRow(0)
             for c_idx, val in enumerate(row):
                 self.table.setItem(0, c_idx, QTableWidgetItem(str(val)))

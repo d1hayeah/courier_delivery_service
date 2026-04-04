@@ -42,6 +42,10 @@ class UsersWindow(QWidget):
         self.delete_btn.clicked.connect(self.delete_user)
         btn_layout.addWidget(self.delete_btn)
         
+        self.clear_btn = QPushButton("Очистить форму")
+        self.clear_btn.clicked.connect(self.clear_form)
+        btn_layout.addWidget(self.clear_btn)
+        
         self.export_btn = QPushButton("Отчёт")
         self.export_btn.clicked.connect(lambda: save_table(self.table, parent=self))
         btn_layout.addWidget(self.export_btn)
@@ -76,6 +80,12 @@ class UsersWindow(QWidget):
         role = self.table.item(row, 2).text()
         idx = self.role_combo.findText(role)
         if idx >= 0: self.role_combo.setCurrentIndex(idx)
+
+    def clear_form(self):
+        self.login_input.clear()
+        self.role_combo.setCurrentIndex(0)
+        self.selected_id = None
+        QMessageBox.information(self, "Успех", "Форма очищена")
 
     def add_user(self):
         if self.user_role != "admin": return
