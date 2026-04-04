@@ -11,7 +11,10 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 def save_table(table, parent=None):
     font_path = 'C:/Windows/Fonts/Arial.ttf'  
+<<<<<<< HEAD
         
+=======
+>>>>>>> c3c2ba404d323d0bf2a3a67caeae78f2ec4a10a8
     font_name = 'CyrillicFont'
     pdfmetrics.registerFont(TTFont(font_name, font_path))
     path = QFileDialog.getSaveFileName(parent, "Сохранить отчёт", "Отчет.pdf", "PDF files (*.pdf);;All Files (*)")[0]
